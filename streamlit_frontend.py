@@ -1,6 +1,12 @@
 import uuid
 
 import streamlit as st
+st.set_page_config(
+    page_title="DocMind AI",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from langgraph_backend import (
@@ -15,6 +21,49 @@ from langgraph_backend import (
     is_chat_deleted,
     generate_chat_title,
 )
+
+
+st.markdown("""
+<style>
+
+[data-testid="stAppViewContainer"]{
+    background:#0f172a;
+}
+
+[data-testid="stSidebar"]{
+    background:linear-gradient(
+        180deg,
+        #111827,
+        #1e293b
+    );
+}
+
+.block-container{
+    max-width:1200px;
+    padding-top:1rem;
+}
+
+.chat-card{
+    background:#1e293b;
+    padding:15px;
+    border-radius:18px;
+    border:1px solid #334155;
+    color:white;
+}
+
+.stButton button{
+    border-radius:14px;
+    border:none;
+    height:45px;
+}
+
+[data-testid="stChatInput"]{
+    background:#1e293b;
+    border-radius:20px;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # =========================== Utilities ===========================
 def generate_thread_id():
@@ -72,7 +121,12 @@ threads = st.session_state["chat_threads"][::-1]
 selected_thread = None
 
 # ============================ Sidebar ============================
-st.sidebar.title("LangGraph PDF Chatbot")
+st.sidebar.markdown(
+    """
+    # 🤖 DocMind AI
+    ### Intelligent Document Assistant
+    """
+)
 
 title = get_chat_title(thread_key)
 
@@ -83,7 +137,10 @@ st.sidebar.markdown(
     f"**Chat:** {title}"
 )
 
-if st.sidebar.button("New Chat", use_container_width=True):
+if st.sidebar.button(
+        "➕ New Conversation",
+        use_container_width=True
+):
     reset_chat()
     st.rerun()
 
@@ -94,9 +151,14 @@ if thread_docs:
         f"({latest_doc.get('chunks')} chunks from {latest_doc.get('documents')} pages)"
     )
 else:
-    st.sidebar.info("No PDF indexed yet.")
+    st.sidebar.info("PDF not indexed yet. Upload a PDF to chat with its content.")
 
-uploaded_pdf = st.sidebar.file_uploader("Upload a PDF for this chat", type=["pdf"])
+st.sidebar.markdown("### 📁 Upload Knowledge Base")
+uploaded_pdf = st.sidebar.file_uploader(
+    "Upload PDF",
+    type=["pdf"],
+    label_visibility="collapsed"
+)
 if uploaded_pdf:
     if uploaded_pdf.name in thread_docs:
         st.sidebar.info(f"`{uploaded_pdf.name}` already processed for this chat.")
@@ -110,7 +172,7 @@ if uploaded_pdf:
             thread_docs[uploaded_pdf.name] = summary
             status_box.update(label="✅ PDF indexed", state="complete", expanded=False)
 
-st.sidebar.subheader("Past conversations")
+st.sidebar.markdown("### 💬 Recent Conversations")
 
 if not threads:
     st.sidebar.write("No past conversations yet.")
@@ -127,10 +189,10 @@ else:
     # Open chat button
     with col1:
         if st.button(
-            title,
-            key=f"side-thread-{thread_id}",
-            use_container_width=True
-        ):
+          f"💬 {title}",
+          key=f"side-thread-{thread_id}",
+          use_container_width=True
+):
             selected_thread = thread_id
 
     # Delete button
@@ -161,14 +223,45 @@ else:
         st.rerun() 
 
 # ============================ Main Layout ========================
-st.title("Multi Utility Chatbot")
+st.markdown("""
+<div style='color:white;'>
 
+<h1>🤖 DocMind AI</h1>
+
+<p style='color:#94a3b8;font-size:18px;'>
+Chat with PDFs, Search the Web, Calculate Values, and Retrieve Document Insights.
+</p>
+
+</div>
+""", unsafe_allow_html=True)
+
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    st.info(f"💬 Chats: {len(st.session_state['chat_threads'])}")
+
+with c2:
+    st.info(f"📄 PDFs: {len(thread_docs)}")
+
+with c3:
+    st.info("⚡ Powered by LangGraph")
+
+# Chat area
 # Chat area
 for message in st.session_state["message_history"]:
     with st.chat_message(message["role"]):
-        st.text(message["content"])
+        st.markdown(
+            f"""
+            <div class='chat-card'>
+            {message["content"]}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-user_input = st.chat_input("Ask about your document or use tools")
+user_input = st.chat_input(
+    "Ask your document, search the web, calculate, or get stock prices..."
+)
 
 if user_input:
     
